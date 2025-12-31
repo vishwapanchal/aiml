@@ -1,0 +1,283 @@
+#include <iostream>
+#include <cmath>
+#include <cstdlib>
+#include <ctime>
+#include <string>
+#include <iomanip> // For nice formatting
+
+using namespace std;
+
+// ==========================================
+// 1. THE MATHEMATICAL FUNCTIONS
+// ==========================================
+
+// OPTION 1: Quadratic (Inverted Parabola)
+// Polynomial: f(x) = -2x^2 + 8x + 7
+// Behavior: Single global peak at x = 2.
+double quadratic(double x) {
+    return -2 * x * x + 8 * x + 7;
+}
+
+// OPTION 2: Quartic (Double Peak / Camel Shape)
+// Polynomial: f(x) = -x^4 + 4x^2
+// Behavior: Two peaks at x = -1.41 and x = 1.41.
+// The algorithm might find either one depending on the start point.
+double quartic(double x) {
+    return -pow(x, 4) + 4 * pow(x, 2);
+}
+
+// OPTION 3: Cubic (Local Max & Drop)
+// Polynomial: f(x) = -x^3 + 3x + 1
+// Behavior: One local max at x = 1, but drops to -infinity if x > 1.
+double cubic(double x) {
+    return -pow(x, 3) + 3 * x + 1;
+}
+
+
+// ==========================================
+// 2. THE HILL CLIMBING ALGORITHM
+// ==========================================
+
+// This function takes a pointer to another function (*func) as an argument
+void runHillClimbing(double (*func)(double), string name, string equation) {
+    
+    cout << "========================================" << endl;
+    cout << "Testing: " << name << endl;
+    cout << "Equation: " << equation << endl;
+
+    // 1. Initial Guess (Random x between -5.0 and 5.0)
+    double x = ((rand() % 1000) / 100.0) - 5.0;
+    
+    double step = 0.01;
+    int maxIterations = 10000;
+    
+    cout << " > Starting Search at x = " << x << endl;
+
+    for (int i = 0; i < maxIterations; i++) {
+        double currentVal = func(x);
+
+        // 2. Explore Neighbors
+        double left = x - step;
+        double right = x + step;
+
+        double leftVal = func(left);
+        double rightVal = func(right);
+
+        // 3. Move to the highest neighbor
+        if (leftVal > currentVal && leftVal >= rightVal) {
+            x = left;
+        }
+        else if (rightVal > currentVal && rightVal > leftVal) {
+            x = right;
+        }
+        else {
+            // Peak found (no neighbor is higher)
+            break;
+        }
+    }
+
+    cout << " > Local Maxima found at x = " << x << endl;
+    cout << " > Maximum Value = " << func(x) << endl;
+    cout << endl;
+}
+
+// ==========================================
+// 3. MAIN EXECUTION
+// ==========================================
+
+int main() {
+    srand(time(0)); // Seed random number generator
+
+    // Run the solver for the Quadratic function
+    runHillClimbing(quadratic, 
+                   "Quadratic Function", 
+                   "f(x) = -2x^2 + 8x + 7");
+
+    // Run the solver for the Quartic function
+    runHillClimbing(quartic, 
+                   "Quartic Function (Double Peak)", 
+                   "f(x) = -x^4 + 4x^2");
+
+    // Run the solver for the Cubic function
+    runHillClimbing(cubic, 
+                   "Cubic Function", 
+                   "f(x) = -x^3 + 3x + 1");
+
+    return 0;
+}
+
+
+#include <iostream>
+using namespace std;
+
+char board[3][3] = {
+    {'.', '.', '.'},
+    {'.', '.', '.'},
+    {'.', '.', '.'}
+};
+
+// Print board
+void show() {
+    cout << "\n";
+    for(int i=0;i<3;i++){
+        for(int j=0;j<3;j++)
+            cout << board[i][j] << " ";
+        cout << "\n";
+    }
+}
+
+// Check winner
+char winner() {
+    for(int i=0;i<3;i++){
+        if(board[i][0]==board[i][1] && board[i][1]==board[i][2] && board[i][0]!='.')
+            return board[i][0];
+        if(board[0][i]==board[1][i] && board[1][i]==board[2][i] && board[0][i]!='.')
+            return board[0][i];
+    }
+    if(board[0][0]==board[1][1] && board[1][1]==board[2][2] && board[0][0]!='.')
+        return board[0][0];
+    if(board[0][2]==board[1][1] && board[1][1]==board[2][0] && board[0][2]!='.')
+        return board[0][2];
+    return '.';
+}
+
+// Check draw
+bool full() {
+    for(int i=0;i<3;i++)
+        for(int j=0;j<3;j++)
+            if(board[i][j]=='.') return false;
+    return true;
+}
+
+// Minimax (DFS)
+int minimax(bool isX) {
+    char w = winner();
+    if(w=='X') return 1;
+    if(w=='O') return -1;
+    if(full()) return 0;
+
+    int best = isX ? -2 : 2;
+
+    for(int i=0;i<3;i++){
+        for(int j=0;j<3;j++){
+            if(board[i][j]=='.'){
+                board[i][j] = isX ? 'X' : 'O';
+                int score = minimax(!isX);
+                board[i][j] = '.';
+                best = isX ? max(best, score) : min(best, score);
+            }
+        }
+    }
+    return best;
+}
+
+// Computer move
+void computerMove() {
+    int bestScore = -2, r, c;
+    for(int i=0;i<3;i++){
+        for(int j=0;j<3;j++){
+            if(board[i][j]=='.'){
+                board[i][j]='X';
+                int score = minimax(false);
+                board[i][j]='.';
+                if(score > bestScore){
+                    bestScore = score;
+                    r=i; c=j;
+                }
+            }
+        }
+    }
+    board[r][c]='X';
+}
+
+// Main
+int main() {
+    cout<<"You = O, Computer = X\n";
+    show();
+
+    while(true){
+        int r,c;
+        cout<<"Enter row col: ";
+        cin>>r>>c;
+        if(board[r][c]!='.') continue;
+        board[r][c]='O';
+
+        if(winner()=='O'){ show(); cout<<"You win!\n"; break; }
+        if(full()){ show(); cout<<"Draw!\n"; break; }
+
+        computerMove();
+        show();
+
+        if(winner()=='X'){ cout<<"Computer wins!\n"; break; }
+        if(full()){ cout<<"Draw!\n"; break; }
+    }
+}
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <climits> // For INT_MIN and INT_MAX
+
+using namespace std;
+
+// Alpha-Beta Pruning Function
+int alphaBeta(int depth, int nodeIndex, bool isMax, vector<int> &values, int alpha, int beta, int maxDepth) {
+    // Base case: reached leaf node
+    if (depth == maxDepth)
+        return values[nodeIndex];
+
+    if (isMax) {
+        int best = INT_MIN;
+
+        // Explore left and right child
+        for (int i = 0; i < 2; i++) {
+            // Calculate child index: nodeIndex * 2 (left) or nodeIndex * 2 + 1 (right)
+            int val = alphaBeta(depth + 1, nodeIndex * 2 + i, false, values, alpha, beta, maxDepth);
+            best = max(best, val);
+            alpha = max(alpha, best);
+
+            cout << "MAX Node(depth " << depth << ") → Updated alpha = " << alpha << ", beta = " << beta << endl;
+
+            // Alpha Beta Pruning condition
+            if (beta <= alpha) {
+                cout << "   ❌ PRUNED at depth " << depth << " (beta <= alpha)" << endl;
+                break;
+            }
+        }
+        return best;
+    }
+    else {
+        int best = INT_MAX;
+
+        for (int i = 0; i < 2; i++) {
+            // Calculate child index
+            int val = alphaBeta(depth + 1, nodeIndex * 2 + i, true, values, alpha, beta, maxDepth);
+            best = min(best, val);
+            beta = min(beta, best);
+
+            cout << "MIN Node(depth " << depth << ") → alpha = " << alpha << ", Updated beta = " << beta << endl;
+
+            if (beta <= alpha) {
+                cout << "   ❌ PRUNED at depth " << depth << " (beta <= alpha)" << endl;
+                break;
+            }
+        }
+        return best;
+    }
+}
+
+int main() {
+    // Leaf node values (A complete binary tree of depth 3 has 2^(3-1) = 4 internal nodes and 2^3 = 8 leaves)
+    // The leaf nodes are indexed from 8 to 15 in a 1-based array, or 7 to 14 in a 0-based, or simply at the end of the vector.
+    // Leaves: [3,5,6,9,1,2,0,-1]
+    vector<int> values = {3, 5, 6, 9, 1, 2, 0, -1};
+    int maxDepth = 3;  // 3 levels deep (Root (0) → Level 1 → Level 2 → Leaves (3))
+
+    // Start at root (nodeIndex 0), depth 0, for MAX player, with initial alpha/beta
+    int result = alphaBeta(0, 0, true, values, INT_MIN, INT_MAX, maxDepth);
+
+    cout << "\n=====================================\n";
+    cout << "Optimal value for MAX player = " << result << endl;
+    cout << "=====================================\n";
+
+    return 0;
+}
